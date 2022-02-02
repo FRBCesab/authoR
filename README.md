@@ -1,17 +1,15 @@
+
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# authoR <img src="man/figures/hexsticker.png" height="120" align="right"/>
+# authoR
 
 <!-- badges: start -->
 
-[![CRAN
-status](https://www.r-pkg.org/badges/version/authoR)](https://CRAN.R-project.org/package=authoR)
-[![License: GPL (&gt;=
+[![License: GPL (\>=
 2)](https://img.shields.io/badge/License-GPL%20%28%3E%3D%202%29-blue.svg)](https://choosealicense.com/licenses/gpl-2.0/)
 [![LifeCycle](man/figures/lifecycle/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![Project Status:
 Concept](https://www.repostatus.org/badges/latest/concept.svg)](https://www.repostatus.org/#concept)
-[![Dependencies](https://img.shields.io/badge/dependencies-0/0-brightgreen?style=flat)](#)
 <!-- badges: end -->
 
 The goal of the R package `authoR` is to **{{ PLEASE ADD A FEW LINES
@@ -22,12 +20,16 @@ The goal of the R package `authoR` is to **{{ PLEASE ADD A FEW LINES
 You can install the development version from
 [GitHub](https://github.com/) with:
 
-    # install.packages("remotes")
-    remotes::install_github("FRBCesab/authoR")
+``` r
+# install.packages("remotes")
+remotes::install_github("FRBCesab/authoR")
+```
 
 Then you can attach the package `authoR`:
 
-    library("authoR")
+``` r
+library("authoR")
+```
 
 ## Overview
 
@@ -38,8 +40,8 @@ Here is an overview of `authoR` content: **{{ PLEASE ADD A FEW LINES
 
 Please cite this package as:
 
-> Casajus Nicolas (2022) authoR: An R package to **{{ TITLE }}**. R
-> package version 0.0.0.9000.
+> Casajus N & Fereira de Lima RA (2022) authoR: An R package to **{{
+> TITLE }}**. R package version 0.0.0.9000.
 
 ## Code of Conduct
 
