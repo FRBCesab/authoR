@@ -12,6 +12,7 @@
 # RStudio files ----
 *.Rproj
 .Rproj.user/
+.Rproj.user
 
 # R Environment Variables ----
 .Renviron
