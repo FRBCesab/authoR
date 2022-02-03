@@ -22,7 +22,10 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
-Suggests: 
+Imports:
+    dplyr,
+    rorcid
+Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)

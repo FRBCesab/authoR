@@ -1,24 +1,26 @@
 #' @title Get Author Info
 #'
-#' @description Get and organize author's personal information obtained from
-#'   ORCID.
+#' @description Get and organize author's personal and employement information
+#'   obtained from ORCID.
 #'
-#' @param x character. 
+#' @param orcid character. A vector of ORCID numbers. 
 #'    
-#' @return the ...
+#' @return a data frame containing in the lines the information for each of the
+#'   ORCID numbers provided.
 #'
-#' @details The function ...
+#' @details The functions obtains and organizes personal and employment
+#'   information using the __rorcid__ functions 'orcid_person' and
+#'   'orcid_employments'. Please check the help of these functions for more
+#'   detail.
 #' 
-#' If two or more ORCID are provided, ...
-#'
 #' @author Renato A. F. de Lima
 #' 
-#' @importFrom rorcid orcid_person
+#' @importFrom rorcid orcid_person orcid_employments
+#' @importFrom dplyr bind_rows
 #'
 #' @examples
 #'
-#' \dontrun{
-#'   orcids <- c("0000-0002-5537-5294", "0000-0002-1048-0138")
+#'   orcids <- c("0000-0002-5537-5294", NA, "0000-0002-1048-0138", "not found")
 #'   orcid_info(orcids)
 #'   
 #' @export orcid_info   
@@ -26,10 +28,14 @@
 orcid_info <- function(orcid) {
   
   ## check input
-  not.orcid <- grepl("\\D", gsub("-", "", orcid, fixed = TRUE), perl = TRUE)
+  not.orcid <- grepl("\\D", gsub("-", "", orcid, fixed = TRUE), perl = TRUE) |
+                  orcid %in% c("", " ", NA)
   if (any(not.orcid))
     warning ("One or more input objects are not ORCID numbers!")
   
+  if (all(not.orcid))
+    stop ("Please provide at least one ORCID number!")
+
   ## getting info from ORCID
   info <- rorcid::orcid_person(orcid[!not.orcid], details = FALSE)
   
@@ -67,17 +73,53 @@ orcid_info <- function(orcid) {
     lapply(info, function(x) x[['external-identifiers']][['external-identifier']][['external-id-url.value']])
   other.id.url <- lapply(other.id.url, function(x) paste0(x, collapse = "|"))
 
+  employ <- rorcid::orcid_employments(orcid[!not.orcid], details = FALSE)
+  summs <- lapply(
+    lapply(employ, function(x) x[['affiliation-group']][['summaries']]), dplyr::bind_rows)
+  columns <- paste0("employment-summary.", 
+                    c("put-code", "department-name", "role-title", 
+                      "start-date.year.value", "end-date.year.value", "organization.name", 
+                      "organization.address.city", "organization.address.region",
+                      "organization.address.country"))
+  summs.clean <- lapply(summs, function (x) x[, names(x) %in% columns])
+  for (i in 1:length(summs.clean)) {
+    dados <- summs.clean[[i]]
+    if (dim(dados)[1] > 1) {
+      keep_these <- !(!is.na(dados["employment-summary.start-date.year.value"]) &
+                        !is.na(dados["employment-summary.end-date.year.value"]))
+      dados <- dados[keep_these, ]
+    }
+    
+    if (dim(dados)[1] > 1)
+      dados <- apply(dados, 2, paste0, collapse = "|")
+    
+    names(dados) <- gsub("employment-summary.", "", names(dados), fixed = TRUE)
+    summs.clean[[i]] <- dados
+  }
+  output.adress <- dplyr::bind_rows(summs.clean)
+  
   ## editing extracted info
   result <- list(given, family, credit, other, biography, urls, emails, 
                  country, keywords, ids, other.id.url)
-  output <- do.call(cbind, lapply(result, cbind))
-  colnames(output) <- c("GivenName", "FamilyName", "CreditName", "OtherNames",
+  output.info <- do.call(cbind, lapply(result, cbind))
+  colnames(output.info) <- c("GivenName", "FamilyName", "CreditName", "OtherNames",
                         "Biography", "URLs", "Email", "Country", "Keywords", 
                         "OtherIDs", "OtherIDsURLs")
-  rownames(output) <- NULL
+  output <- cbind(output.info, output.adress) 
   output[sapply(output, is.null)] <- ""
   output <- as.data.frame(output)
   output$OtherIDs[output$OtherIDs %in% ": "] <- ""
+  
+  ## Saving only the results for valid ORCID numbers
+  if (any(not.orcid)) {
+    res.na <- matrix(NA, ncol = dim(output)[2], nrow = sum(not.orcid),
+                     dimnames = list(orcid[not.orcid], colnames(output)))
+    output.final <- rbind.data.frame(output, res.na)
+    output.final <- output.final[match(orcid, row.names(output.final)),]
+    row.names(output.final)[not.orcid] <- paste0("not.orcid", seq_len(sum(not.orcid))) 
+  } else {
+    output.final <- output
+  }
 
-  return(output)
+  return(output.final)
 }

@@ -17,7 +17,12 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Nicolas Casajus \email{nicolas.casajus@fondationbiodiversite.fr} (\href{https://orcid.org/0000-0002-5537-5294}{ORCID})
+\strong{Maintainer}: Nicolas Casajus \email{nicolas.casajus@fondationbiodiversite.fr} (\href{https://orcid.org/0000-0002-5537-5294}{ORCID}) [copyright holder]
+
+Authors:
+\itemize{
+  \item Renato A. Fereira de Lima \email{raflima@usp.br} (\href{https://orcid.org/0000-0002-1048-0138}{ORCID})
+}
 
 }
 \keyword{internal}

@@ -15,18 +15,34 @@
 #' @param keywords character. one or more keywords to filter the search output,
 #'   in the case of two or more ORCIDs
 #' @param rows integer. The number of ORCID records to return, to be passed to
-#'   function rorcid::orcid_search
+#'   function rorcid::orcid_search. Defaults to 20.
 #' @param clean logical. Should the function return only the exact name search?
-#'   Defaults to TRUE
+#'   Defaults to FALSE.
 #'    
 #'
 #' @return the same input data frame with the missing (i.e. NA) ORCID, if found.
 #'
-#' @details The function ...
+#' @details 
 #' 
-#' If there are two or more ORCID found, all ORCID are returned separated by a
-#' pipe (i.e. "|").
-#'
+#' If only one researcher is found the function returns a sole ORCID. If
+#' there are two or more ORCID found, all ORCID are returned separated by a pipe
+#' (i.e. "|"). 
+#' 
+#' The arguments 'keywords' can be used to narrow down the search if multiple
+#' IDs are found. But it will only work if the reasearchers have included
+#' keywords in their ORCID records, which is not always the case (see examples).
+#' 
+#' In addition, if argument 'clean' is TRUE, it will exclude those IDs which are
+#' not exact matches, which can be useful to remove spurious hits. Also, you 
+#' may want to increase the number of results returned by each query if the names
+#' provided are too common, to make sure that the name you are searching is
+#' indeed returned in the query.
+#' 
+#' The package __rorcid__ which is used internally, requires an ORCID token or
+#' that the user starts a ORCID session and authorise the package, so it can
+#' query their API. So, make sure you have one of the options ready before using
+#' the function.
+#' 
 #' @author Renato A. F. de Lima
 #' 
 #' @importFrom rorcid orcid_search
@@ -34,10 +50,15 @@
 #'
 #' @examples
 #'
-#' \dontrun{
-#' # Simple names
+#'   # Single ORCID record with the name
 #'   df <- data.frame(FirstName = "Nicolas", LastName = "Casajus")
 #'   get_orcid(df)
+#'   
+#'   # Multiple ORCID entries
+#'   df <- data.frame(FirstName = "Renato", LastName = "Lima")
+#'   get_orcid(df)
+#'   get_orcid(df, clean = TRUE)
+#'   get_orcid(df, keywords = "ecology")
 #'   
 #' @export get_orcid   
 #'
@@ -47,8 +68,8 @@ get_orcid <- function(x,
                       middle.name = "MiddleName_Initials",
                       orcid.name = "ORCID",
                       keywords = NULL,
-                      rows = 10,
-                      clean = TRUE) {
+                      rows = 20,
+                      clean = FALSE) {
   
   ## check input
   if (!"data.frame" %in% class(x))
@@ -79,8 +100,8 @@ get_orcid <- function(x,
     if (is.na(dados[, orcid.name])) {
       orcid.i <- as.data.frame(
         rorcid::orcid_search(given_name = first, 
-                                      family_name = last,
-                                      rows = rows))
+                             family_name = last,
+                             rows = rows))
       
       if (dim(orcid.i)[1] == 0) {
         result[[i]] <-
@@ -97,7 +118,7 @@ get_orcid <- function(x,
       
       if (dim(orcid.i)[1] > 1) {
         
-        if (clean){
+        if (clean) {
           keep <- orcid.i$last %in% last & orcid.i$first %in% first
           if (any(keep)) {
             orcid.i <- orcid.i[keep, ] 
@@ -109,16 +130,22 @@ get_orcid <- function(x,
           
         
         if (dim(orcid.i)[1] > 1) {
-          orcid.ii <- as.data.frame(
-            rorcid::orcid_search(
-              given_name = first,
-              family_name = last,
-              keywords = keywords))
           
-          if (dim(orcid.ii)[1] == 1) {
-            row.names(orcid.ii) <- full
-            result[[i]] <- orcid.ii
+          if (!is.null(keywords)) {
+            orcid.ii <- as.data.frame(
+              rorcid::orcid_search(
+                given_name = first,
+                family_name = last,
+                keywords = keywords))
             
+            if (dim(orcid.ii)[1] == 1) {
+              row.names(orcid.ii) <- full
+              result[[i]] <- orcid.ii
+              
+            } else {
+              row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
+              result[[i]] <- orcid.i
+            }
           } else {
             row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
             result[[i]] <- orcid.i
@@ -147,7 +174,9 @@ get_orcid <- function(x,
   output <- dplyr::bind_rows(result)
   full.names <- gsub("[0-9]", "", row.names(output), perl = TRUE)
   orcid.output <- 
-    aggregate(output$orcid, list(full.names), paste0, collapse = "|")
+    stats::aggregate(output$orcid, list(full.names), paste0, collapse = "|")
+  full.names.orig <- apply(x[ , c(first.name, last.name)], 1, paste, collapse = " ")
+  orcid.output <- orcid.output[match(full.names.orig, orcid.output$Group.1),]
   
   x[is.na(x[ , orcid.name]), orcid.name] <- 
     as.character(orcid.output$x[is.na(x[ , orcid.name])]) 
