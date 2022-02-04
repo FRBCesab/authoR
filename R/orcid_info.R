@@ -42,9 +42,10 @@ orcid_info <- function(orcid) {
   #extracting relevant info
   given <- lapply(info, function(x) x[['name']][['given-names']][['value']])
   family <- lapply(info, function(x) x[['name']][['family-name']][['value']])
-  credit <- lapply(info, function(x) x[['name']][['credit-name']])
+  credit <- lapply(info, function(x) x[['name']][['credit-name']][['value']])
   other <- 
     lapply(info, function(x) x[['other-names']][['other-name']][['content']])
+  other <- lapply(other, function(x) paste0(x, collapse = "|"))
   
   biography <- lapply(info, function(x) x[['biography']][['content']])
   
@@ -55,7 +56,7 @@ orcid_info <- function(orcid) {
   # urls <- mapply(FUN = paste0, urls.name, " [[", urls.path,"]]")
   urls <- lapply(urls.path, function(x) paste0(x, collapse = "|"))
 
-  emails <- lapply(info, function(x) paste0(x[['emails']][['email']], collapse = "|"))
+  emails <- lapply(info, function(x) x[['emails']][['email']][['email']])
   
   country <- 
     lapply(info, function(x) x[['addresses']][['address']][['country.value']])
@@ -110,27 +111,39 @@ orcid_info <- function(orcid) {
   output.adress <- dplyr::bind_rows(summs.clean)
   
   ## editing extracted info
-  result <- list(given, family, credit, other, biography, urls, emails, 
-                 country, keywords, ids, other.id.url)
-  output.info <- do.call(cbind, lapply(result, cbind))
-  colnames(output.info) <- c("GivenName", "FamilyName", "CreditName", "OtherNames",
-                        "Biography", "URLs", "Email", "Country", "Keywords", 
-                        "OtherIDs", "OtherIDsURLs")
-  output <- cbind(output.info, output.adress) 
-  output[sapply(output, is.null)] <- ""
-  output <- as.data.frame(output)
-  output$OtherIDs[output$OtherIDs %in% ": "] <- ""
+  output.info <- data.frame(ID = orcid[!not.orcid],
+                            GivenName = as.character(given),
+                            FamilyName = as.character(family),
+                            CreditName = as.character(credit), 
+                            OtherNames = as.character(other),
+                            Biography = as.character(biography), 
+                            URLs = as.character(urls), 
+                            Email = as.character(emails), 
+                            Country = as.character(country), 
+                            Keywords = as.character(keywords), 
+                            OtherIDs = as.character(ids), 
+                            OtherIDsURLs = as.character(other.id.url))
+  
+  output <- cbind.data.frame(output.info, output.adress,
+                             stringsAsFactors = FALSE) 
+  output[sapply(output, is.null)] <- NA
+  output[sapply(output, function(x) x %in% "NULL")] <- NA
+  output[sapply(output, function(x) x %in% "")] <- NA
+  output$OtherIDs[output$OtherIDs %in% ": "] <- NA
   
   ## Saving only the results for valid ORCID numbers
   if (any(not.orcid)) {
     res.na <- matrix(NA, ncol = dim(output)[2], nrow = sum(not.orcid),
                      dimnames = list(orcid[not.orcid], colnames(output)))
-    output.final <- rbind.data.frame(output, res.na)
-    output.final <- output.final[match(orcid, row.names(output.final)),]
-    row.names(output.final)[not.orcid] <- paste0("not.orcid", seq_len(sum(not.orcid))) 
+    res.na[,'ID'] <- orcid[not.orcid]
+    output.final <- rbind.data.frame(output, res.na,
+                                     stringsAsFactors = FALSE)
+    output.final <- output.final[match(orcid, output.final$ID),]
   } else {
     output.final <- output
   }
+
+  output.final[] <- lapply(output.final, as.character)
 
   return(output.final)
 }
