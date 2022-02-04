@@ -2,7 +2,6 @@
 
 export(get_orcid)
 export(orcid_info)
-export(print_msg)
 importFrom(dplyr,bind_rows)
 importFrom(rorcid,orcid_employments)
 importFrom(rorcid,orcid_person)

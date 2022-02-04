@@ -28,7 +28,7 @@
 orcid_info <- function(orcid) {
   
   ## check input
-  not.orcid <- grepl("\\D", gsub("-", "", orcid, fixed = TRUE), perl = TRUE) |
+  not.orcid <- grepl("\\D", gsub("-|X", "", orcid, perl = TRUE), perl = TRUE) |
                   orcid %in% c("", " ", NA)
   if (any(not.orcid))
     warning ("One or more input objects are not ORCID numbers!")
@@ -36,10 +36,10 @@ orcid_info <- function(orcid) {
   if (all(not.orcid))
     stop ("Please provide at least one ORCID number!")
 
-  ## getting info from ORCID
+  ## getting personal info from ORCID
   info <- rorcid::orcid_person(orcid[!not.orcid], details = FALSE)
   
-  ## extracting relevant info
+  #extracting relevant info
   given <- lapply(info, function(x) x[['name']][['given-names']][['value']])
   family <- lapply(info, function(x) x[['name']][['family-name']][['value']])
   credit <- lapply(info, function(x) x[['name']][['credit-name']])
@@ -73,29 +73,40 @@ orcid_info <- function(orcid) {
     lapply(info, function(x) x[['external-identifiers']][['external-identifier']][['external-id-url.value']])
   other.id.url <- lapply(other.id.url, function(x) paste0(x, collapse = "|"))
 
+  ## getting Employment info from ORCID
   employ <- rorcid::orcid_employments(orcid[!not.orcid], details = FALSE)
-  summs <- lapply(
-    lapply(employ, function(x) x[['affiliation-group']][['summaries']]), dplyr::bind_rows)
+  
+  #editing employment info
+  summs <- lapply(lapply(employ, 
+                         function(x) x[['affiliation-group']][['summaries']]), dplyr::bind_rows)
   columns <- paste0("employment-summary.", 
                     c("put-code", "department-name", "role-title", 
                       "start-date.year.value", "end-date.year.value", "organization.name", 
                       "organization.address.city", "organization.address.region",
                       "organization.address.country"))
   summs.clean <- lapply(summs, function (x) x[, names(x) %in% columns])
-  for (i in 1:length(summs.clean)) {
+  for (i in seq_len(length(summs.clean))) {
     dados <- summs.clean[[i]]
     if (dim(dados)[1] > 1) {
-      keep_these <- !(!is.na(dados["employment-summary.start-date.year.value"]) &
-                        !is.na(dados["employment-summary.end-date.year.value"]))
-      dados <- dados[keep_these, ]
+      start.date <- "employment-summary.start-date.year.value"
+      end.data <- "employment-summary.end-date.year.value"
+      if (start.date %in% names(dados) & end.data %in% names(dados)) {
+        keep_these <- !(!is.na(dados[start.date]) & !is.na(dados[end.data]))
+        dados <- dados[keep_these, ]
+      }
+    } else {
+      dados <- as.data.frame(matrix(NA, ncol = length(columns),
+                             dimnames = list(NULL, columns)))
     }
     
     if (dim(dados)[1] > 1)
       dados <- apply(dados, 2, paste0, collapse = "|")
     
     names(dados) <- gsub("employment-summary.", "", names(dados), fixed = TRUE)
+    dados[] <- lapply(dados, as.character)
     summs.clean[[i]] <- dados
   }
+  
   output.adress <- dplyr::bind_rows(summs.clean)
   
   ## editing extracted info
