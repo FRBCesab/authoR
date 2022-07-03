@@ -18,9 +18,11 @@
 #'   function rorcid::orcid_search. Defaults to 20.
 #' @param clean logical. Should the function return only the exact name search?
 #'   Defaults to FALSE.
-#'    
+#' @param save.names logical. Should the people's names retrieved be returned as
+#'   well? Defaults to TRUE.
 #'
-#' @return the same input data frame with the missing (i.e. NA) ORCID, if found.
+#' @return the same input data frame with the missing (i.e. NA) ORCID, and
+#'   optionally the corresponding names, if found.
 #'
 #' @details 
 #' 
@@ -33,10 +35,15 @@
 #' keywords in their ORCID records, which is not always the case (see examples).
 #' 
 #' In addition, if argument 'clean' is TRUE, it will exclude those IDs which are
-#' not exact matches, which can be useful to remove spurious hits. Also, you 
-#' may want to increase the number of results returned by each query if the names
+#' not exact matches, which can be useful to remove spurious hits. Also, you may
+#' want to increase the number of results returned by each query if the names
 #' provided are too common, to make sure that the name you are searching is
 #' indeed returned in the query.
+#' 
+#' By default, the function performs queries only for missing DOIs in the in the
+#' input column defined by `orcid.name` in the object `x`. It alsos returns two
+#' new columns containing the first and last names as retrieved in ORCID, but
+#' this option is controleed by the argument `save.names`. 
 #' 
 #' The package __rorcid__ which is used internally, requires an ORCID token or
 #' that the user starts a ORCID session and authorise the package, so it can
@@ -71,7 +78,8 @@ get_orcid <- function(x,
                       orcid.name = "ORCID",
                       keywords = NULL,
                       rows = 20,
-                      clean = FALSE) {
+                      clean = FALSE,
+                      save.names = TRUE) {
   
   ## check input
   if (!"data.frame" %in% class(x))
@@ -93,6 +101,9 @@ get_orcid <- function(x,
     last <- last.old <- as.character(dados[, last.name])
     full <- paste(first, last)
     
+    cat("\r Running name", i, "of", length(result)) 
+    utils::flush.console()
+
     if (middle.name %in% names(x)) {
       if (!is.na(dados[, middle.name]))
         last <- paste(as.character(dados[, middle.name]), last)
@@ -144,18 +155,19 @@ get_orcid <- function(x,
           if (dim(orcid.i)[1] > 1) {
             row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
             result[[i]] <- orcid.i
+            next
           } else {
             row.names(orcid.i) <- full
             result[[i]] <- orcid.i
+            next
           }
         }
-        
-        
       }
       
       if (dim(orcid.i)[1] == 1) {
         row.names(orcid.i) <- full
         result[[i]] <- orcid.i
+        next
       }    
       
       if (dim(orcid.i)[1] > 1) {
@@ -169,8 +181,7 @@ get_orcid <- function(x,
             warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
           }
         }
-          
-        
+
         if (dim(orcid.i)[1] > 1) {
           
           if (!is.null(keywords)) {
@@ -183,45 +194,60 @@ get_orcid <- function(x,
             if (dim(orcid.ii)[1] == 1) {
               row.names(orcid.ii) <- full
               result[[i]] <- orcid.ii
-              
+              next
             } else {
               row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
               result[[i]] <- orcid.i
+              next
             }
           } else {
             row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
             result[[i]] <- orcid.i
+            next
           }
           
         } else {
           row.names(orcid.i) <- full
           result[[i]] <- orcid.i
+          next
         }
-        
-        
       }
-      
     } else {
-      
       result[[i]] <- cbind.data.frame(
         first = first,
         last = last,
         orcid = dados$ORCID,
         row.names = full)
+      next
     }
+    
   }
   
   output <- dplyr::bind_rows(result)
   colunas <- c("first", "last", "orcid")
   output <- output[, names(output) %in% colunas[colunas %in% names(output)]]
+  
   full.names <- gsub("[0-9]", "", row.names(output), perl = TRUE)
+  # f1 <- function(x) paste0(unique(x), collapse = "|")
+  # orcid.output <- 
+  #   stats::aggregate(output, list(full.names), f1)
   orcid.output <- 
     stats::aggregate(output, list(full.names), paste0, collapse = "|")
-  full.names.orig <- apply(x[ , c(first.name, last.name)], 1, paste, collapse = " ")
+  full.names.orig <- 
+    apply(x[ , c(first.name, last.name)], 1, paste, collapse = " ")
   orcid.output <- orcid.output[match(full.names.orig, orcid.output$Group.1),]
   
   x[is.na(x[ , orcid.name]), orcid.name] <- 
     as.character(orcid.output$orcid[is.na(x[ , orcid.name])]) 
+  
+  if (save.names) {
+    new.columns <- c("firstName.orcid", "lastName.orcid")
+    check_these <- new.columns %in% names(x)
+    if (any(check_these))
+      new.columns[check_these] <- paste0(new.columns[check_these], ".new")
+    
+    x[, new.columns] <- orcid.output[, c("first", "last")]
+  }
   
   return(x)
 }

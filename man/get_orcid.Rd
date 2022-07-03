@@ -12,7 +12,8 @@ get_orcid(
   orcid.name = "ORCID",
   keywords = NULL,
   rows = 20,
-  clean = FALSE
+  clean = FALSE,
+  save.names = TRUE
 )
 }
 \arguments{
@@ -39,9 +40,13 @@ function rorcid::orcid_search. Defaults to 20.}
 
 \item{clean}{logical. Should the function return only the exact name search?
 Defaults to FALSE.}
+
+\item{save.names}{logical. Should the people's names retrieved be returned as
+well? Defaults to TRUE.}
 }
 \value{
-the same input data frame with the missing (i.e. NA) ORCID, if found.
+the same input data frame with the missing (i.e. NA) ORCID, and
+optionally the corresponding names, if found.
 }
 \description{
 Get ORCID based on people's names.
@@ -56,10 +61,15 @@ IDs are found. But it will only work if the reasearchers have included
 keywords in their ORCID records, which is not always the case (see examples).
 
 In addition, if argument 'clean' is TRUE, it will exclude those IDs which are
-not exact matches, which can be useful to remove spurious hits. Also, you
-may want to increase the number of results returned by each query if the names
+not exact matches, which can be useful to remove spurious hits. Also, you may
+want to increase the number of results returned by each query if the names
 provided are too common, to make sure that the name you are searching is
 indeed returned in the query.
+
+By default, the function performs queries only for missing DOIs in the in the
+input column defined by \code{orcid.name} in the object \code{x}. It alsos returns two
+new columns containing the first and last names as retrieved in ORCID, but
+this option is controleed by the argument \code{save.names}.
 
 The package \strong{rorcid} which is used internally, requires an ORCID token or
 that the user starts a ORCID session and authorise the package, so it can
