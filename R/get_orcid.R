@@ -221,7 +221,7 @@ get_orcid <- function(x,
   orcid.output <- orcid.output[match(full.names.orig, orcid.output$Group.1),]
   
   x[is.na(x[ , orcid.name]), orcid.name] <- 
-    as.character(orcid.output$x[is.na(x[ , orcid.name])]) 
+    as.character(orcid.output$orcid[is.na(x[ , orcid.name])]) 
   
   return(x)
 }
