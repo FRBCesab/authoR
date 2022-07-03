@@ -8,7 +8,7 @@ get_orcid(
   x,
   first.name = "FirstName",
   last.name = "LastName",
-  middle.name = "MiddleName_Initials",
+  middle.name = "MiddleName",
   orcid.name = "ORCID",
   keywords = NULL,
   rows = 20,
@@ -26,7 +26,7 @@ name. Defaults to "FirstName".}
 Defaults to "LastName".}
 
 \item{middle.name}{character. The name of the column containing the middle
-name (optional). Defaults to "MiddleName_Initials"}
+name (optional). Defaults to "MiddleName"}
 
 \item{orcid.name}{character. The name of the column containing the ORCID
 number (optional). Defaults to "ORCID".}
@@ -68,6 +68,7 @@ the function.
 }
 \examples{
 
+\dontrun{
   # Single ORCID record with the name
   df <- data.frame(FirstName = "Nicolas", LastName = "Casajus")
   get_orcid(df)
@@ -77,6 +78,7 @@ the function.
   get_orcid(df)
   get_orcid(df, clean = TRUE)
   get_orcid(df, keywords = "ecology")
+}   
   
 }
 \author{

@@ -25,9 +25,11 @@ detail.
 }
 \examples{
 
+\dontrun{
   orcids <- c("0000-0002-5537-5294", NA, "0000-0002-1048-0138", "not found")
   orcid_info(orcids)
-  
+}   
+ 
 }
 \author{
 Renato A. F. de Lima

@@ -9,7 +9,7 @@
 #' @param last.name character. The name of the column containing the last name.
 #'   Defaults to "LastName".
 #' @param middle.name character. The name of the column containing the middle
-#'   name (optional). Defaults to "MiddleName_Initials"
+#'   name (optional). Defaults to "MiddleName"
 #' @param orcid.name character. The name of the column containing the ORCID
 #'   number (optional). Defaults to "ORCID".
 #' @param keywords character. one or more keywords to filter the search output,
@@ -50,6 +50,7 @@
 #'
 #' @examples
 #'
+#' \dontrun{
 #'   # Single ORCID record with the name
 #'   df <- data.frame(FirstName = "Nicolas", LastName = "Casajus")
 #'   get_orcid(df)
@@ -59,13 +60,14 @@
 #'   get_orcid(df)
 #'   get_orcid(df, clean = TRUE)
 #'   get_orcid(df, keywords = "ecology")
+#' }   
 #'   
 #' @export get_orcid   
 #'
 get_orcid <- function(x,
                       first.name = "FirstName",
                       last.name = "LastName",
-                      middle.name = "MiddleName_Initials",
+                      middle.name = "MiddleName",
                       orcid.name = "ORCID",
                       keywords = NULL,
                       rows = 20,
@@ -82,14 +84,13 @@ get_orcid <- function(x,
   if (!orcid.name %in% names(x))
     x[, orcid.name] <- NA
   
-    
   result <- vector("list", dim(x)[1])
   
   for (i in seq_len(length(result))) {
     
     dados <- x[i, ]
     first <- as.character(dados[, first.name])
-    last <- as.character(dados[, last.name])
+    last <- last.old <- as.character(dados[, last.name])
     full <- paste(first, last)
     
     if (middle.name %in% names(x)) {
@@ -104,11 +105,52 @@ get_orcid <- function(x,
                              rows = rows))
       
       if (dim(orcid.i)[1] == 0) {
-        result[[i]] <-
-          cbind.data.frame(first = first,
-                           last = last,
-                           orcid = "not found",
-                           row.names = full)
+
+        if (middle.name %in% names(x)) {
+          if (!is.na(dados[, middle.name]))
+            orcid.i <- as.data.frame(
+              rorcid::orcid_search(given_name = first, 
+                                   family_name = last.old,
+                                   rows = rows))
+        }
+        
+        if (dim(orcid.i)[1] == 0) {
+          result[[i]] <-
+            cbind.data.frame(first = first,
+                             last = last,
+                             orcid = "not found",
+                             row.names = full)
+          next
+        }
+        
+        if (dim(orcid.i)[1] == 1) {
+          row.names(orcid.i) <- full
+          result[[i]] <- orcid.i
+          next
+        }    
+
+        if (dim(orcid.i)[1] > 1) {
+          
+          if (clean) {
+            keep <- orcid.i$last %in% c(last, last.old) & orcid.i$first %in% first
+            if (any(keep)) {
+              orcid.i <- orcid.i[keep, ] 
+            } else {
+              orcid.i <- orcid.i
+              warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+            }
+          }
+          
+          if (dim(orcid.i)[1] > 1) {
+            row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
+            result[[i]] <- orcid.i
+          } else {
+            row.names(orcid.i) <- full
+            result[[i]] <- orcid.i
+          }
+        }
+        
+        
       }
       
       if (dim(orcid.i)[1] == 1) {
@@ -166,15 +208,15 @@ get_orcid <- function(x,
         last = last,
         orcid = dados$ORCID,
         row.names = full)
-      
     }
-    
   }
   
   output <- dplyr::bind_rows(result)
+  colunas <- c("first", "last", "orcid")
+  output <- output[, names(output) %in% colunas[colunas %in% names(output)]]
   full.names <- gsub("[0-9]", "", row.names(output), perl = TRUE)
   orcid.output <- 
-    stats::aggregate(output$orcid, list(full.names), paste0, collapse = "|")
+    stats::aggregate(output, list(full.names), paste0, collapse = "|")
   full.names.orig <- apply(x[ , c(first.name, last.name)], 1, paste, collapse = " ")
   orcid.output <- orcid.output[match(full.names.orig, orcid.output$Group.1),]
   

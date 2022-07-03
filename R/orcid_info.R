@@ -20,9 +20,11 @@
 #'
 #' @examples
 #'
+#' \dontrun{
 #'   orcids <- c("0000-0002-5537-5294", NA, "0000-0002-1048-0138", "not found")
 #'   orcid_info(orcids)
-#'   
+#' }   
+#'  
 #' @export orcid_info   
 #'
 orcid_info <- function(orcid) {
