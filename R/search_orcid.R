@@ -193,12 +193,21 @@ search_orcid <- function(x,
       if (dim(orcid.i)[1] > 1) {
         
         if (clean) {
-          keep <- orcid.i$last %in% last & orcid.i$first %in% first
+          keep <- tolower(orcid.i$last) %in% tolower(last) & 
+                    tolower(orcid.i$first) %in% tolower(first)
+          if (!any(keep))
+            keep <- tolower(orcid.i$last) %in% tolower(last.old) & 
+              tolower(orcid.i$first) %in% tolower(first)
+          
+          if (!any(keep))
+            keep <- grepl(last.old, orcid.i$last, perl = TRUE, ignore.case = TRUE) &
+                        grepl(first, orcid.i$first, perl = TRUE, ignore.case = TRUE)
+          
           if (any(keep)) {
             orcid.i <- orcid.i[keep, ] 
           } else {
             orcid.i <- orcid.i
-            warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+            warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
           }
         }
 
@@ -212,12 +221,21 @@ search_orcid <- function(x,
                 keywords = keywords))
             
             if (clean) {
-              keep <- orcid.i$last %in% last & orcid.i$first %in% first
+              keep <- tolower(orcid.i$last) %in% tolower(last) & 
+                tolower(orcid.i$first) %in% tolower(first)
+              if (!any(keep))
+                keep <- tolower(orcid.i$last) %in% tolower(last.old) & 
+                  tolower(orcid.i$first) %in% tolower(first)
+              
+              if (!any(keep))
+                keep <- grepl(last.old, orcid.i$last, perl = TRUE, ignore.case = TRUE) &
+                  grepl(first, orcid.i$first, perl = TRUE, ignore.case = TRUE)
+              
               if (any(keep)) {
                 orcid.i <- orcid.i[keep, ] 
               } else {
                 orcid.i <- orcid.i
-                warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+                warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
               }
             }
 
