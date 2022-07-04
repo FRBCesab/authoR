@@ -36,7 +36,7 @@ orcid_info <- function(orcid) {
     warning ("One or more input objects are not ORCID numbers!")
   
   if (all(not.orcid))
-    stop ("Please provide at least one ORCID number!")
+    stop ("Please provide at least one valid ORCID number!")
 
   ## getting personal info from ORCID
   info <- rorcid::orcid_person(orcid[!not.orcid], details = FALSE)

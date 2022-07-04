@@ -212,6 +212,11 @@ get_orcid <- function(x,
           next
         }
       }
+      else {
+        row.names(orcid.i) <- full
+        result[[i]] <- orcid.i
+        next
+      }
     } else {
       result[[i]] <- cbind.data.frame(
         first = first,
