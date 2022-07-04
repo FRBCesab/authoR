@@ -130,28 +130,66 @@ search_orcid <- function(x,
     }
 
     if (is.na(dados[, orcid.name])) {
-      orcid.i <- as.data.frame(
-        rorcid::orcid_search(given_name = first, 
-                             family_name = last,
-                             rows = rows))
-      
-      if (dim(orcid.i)[1] == 0) {
-
-        if (middle.name %in% names(x)) {
-          if (!is.na(dados[, middle.name]))
-            orcid.i <- as.data.frame(
-              rorcid::orcid_search(given_name = first, 
-                                   family_name = last.old,
-                                   rows = rows))
-        }
+      if (is.na(last) & is.na(first)) {
+        result[[i]] <-
+          cbind.data.frame(first = NA_character_,
+                           last = NA_character_,
+                           orcid = "not queried",
+                           row.names = names(result)[i])
+        next
+      } else {
+        orcid.i <- as.data.frame(
+          rorcid::orcid_search(given_name = first, 
+                               family_name = last,
+                               rows = rows))
         
         if (dim(orcid.i)[1] == 0) {
-          result[[i]] <-
-            cbind.data.frame(first = first,
-                             last = last,
-                             orcid = "not found",
-                             row.names = full)
-          next
+          
+          if (middle.name %in% names(x)) {
+            if (!is.na(dados[, middle.name]))
+              orcid.i <- as.data.frame(
+                rorcid::orcid_search(given_name = first, 
+                                     family_name = last.old,
+                                     rows = rows))
+          }
+          
+          if (dim(orcid.i)[1] == 0) {
+            result[[i]] <-
+              cbind.data.frame(first = first,
+                               last = last,
+                               orcid = "not found",
+                               row.names = full)
+            next
+          }
+          
+          if (dim(orcid.i)[1] == 1) {
+            row.names(orcid.i) <- full
+            result[[i]] <- orcid.i
+            next
+          }    
+          
+          if (dim(orcid.i)[1] > 1) {
+            
+            if (clean) {
+              keep <- orcid.i$last %in% c(last, last.old) & orcid.i$first %in% first
+              if (any(keep)) {
+                orcid.i <- orcid.i[keep, ] 
+              } else {
+                orcid.i <- orcid.i
+                warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+              }
+            }
+            
+            if (dim(orcid.i)[1] > 1) {
+              row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
+              result[[i]] <- orcid.i
+              next
+            } else {
+              row.names(orcid.i) <- full
+              result[[i]] <- orcid.i
+              next
+            }
+          }
         }
         
         if (dim(orcid.i)[1] == 1) {
@@ -159,116 +197,87 @@ search_orcid <- function(x,
           result[[i]] <- orcid.i
           next
         }    
-
+        
         if (dim(orcid.i)[1] > 1) {
           
           if (clean) {
-            keep <- orcid.i$last %in% c(last, last.old) & orcid.i$first %in% first
+            keep <- tolower(orcid.i$last) %in% tolower(last) & 
+              tolower(orcid.i$first) %in% tolower(first)
+            if (!any(keep))
+              keep <- tolower(orcid.i$last) %in% tolower(last.old) & 
+                tolower(orcid.i$first) %in% tolower(first)
+            
+            if (!any(keep))
+              keep <- grepl(last.old, orcid.i$last, perl = TRUE, ignore.case = TRUE) &
+                grepl(first, orcid.i$first, perl = TRUE, ignore.case = TRUE)
+            
             if (any(keep)) {
               orcid.i <- orcid.i[keep, ] 
             } else {
               orcid.i <- orcid.i
-              warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+              warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
             }
           }
           
           if (dim(orcid.i)[1] > 1) {
-            row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
-            result[[i]] <- orcid.i
-            next
-          } else {
-            row.names(orcid.i) <- full
-            result[[i]] <- orcid.i
-            next
-          }
-        }
-      }
-      
-      if (dim(orcid.i)[1] == 1) {
-        row.names(orcid.i) <- full
-        result[[i]] <- orcid.i
-        next
-      }    
-      
-      if (dim(orcid.i)[1] > 1) {
-        
-        if (clean) {
-          keep <- tolower(orcid.i$last) %in% tolower(last) & 
-                    tolower(orcid.i$first) %in% tolower(first)
-          if (!any(keep))
-            keep <- tolower(orcid.i$last) %in% tolower(last.old) & 
-              tolower(orcid.i$first) %in% tolower(first)
-          
-          if (!any(keep))
-            keep <- grepl(last.old, orcid.i$last, perl = TRUE, ignore.case = TRUE) &
-                        grepl(first, orcid.i$first, perl = TRUE, ignore.case = TRUE)
-          
-          if (any(keep)) {
-            orcid.i <- orcid.i[keep, ] 
-          } else {
-            orcid.i <- orcid.i
-            warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
-          }
-        }
-
-        if (dim(orcid.i)[1] > 1) {
-          
-          if (!is.null(keywords)) {
-            orcid.ii <- as.data.frame(
-              rorcid::orcid_search(
-                given_name = first,
-                family_name = last,
-                keywords = keywords))
             
-            if (clean) {
-              keep <- tolower(orcid.i$last) %in% tolower(last) & 
-                tolower(orcid.i$first) %in% tolower(first)
-              if (!any(keep))
-                keep <- tolower(orcid.i$last) %in% tolower(last.old) & 
+            if (!is.null(keywords)) {
+              orcid.ii <- as.data.frame(
+                rorcid::orcid_search(
+                  given_name = first,
+                  family_name = last,
+                  keywords = keywords))
+              
+              if (clean) {
+                keep <- tolower(orcid.i$last) %in% tolower(last) & 
                   tolower(orcid.i$first) %in% tolower(first)
-              
-              if (!any(keep))
-                keep <- grepl(last.old, orcid.i$last, perl = TRUE, ignore.case = TRUE) &
-                  grepl(first, orcid.i$first, perl = TRUE, ignore.case = TRUE)
-              
-              if (any(keep)) {
-                orcid.i <- orcid.i[keep, ] 
-              } else {
-                orcid.i <- orcid.i
-                warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
+                if (!any(keep))
+                  keep <- tolower(orcid.i$last) %in% tolower(last.old) & 
+                    tolower(orcid.i$first) %in% tolower(first)
+                
+                if (!any(keep))
+                  keep <- grepl(last.old, orcid.i$last, perl = TRUE, ignore.case = TRUE) &
+                    grepl(first, orcid.i$first, perl = TRUE, ignore.case = TRUE)
+                
+                if (any(keep)) {
+                  orcid.i <- orcid.i[keep, ] 
+                } else {
+                  orcid.i <- orcid.i
+                  warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
+                }
               }
-            }
-
-            if (dim(orcid.ii)[1] == 1) {
-              row.names(orcid.ii) <- full
-              result[[i]] <- orcid.ii
-              next
+              
+              if (dim(orcid.ii)[1] == 1) {
+                row.names(orcid.ii) <- full
+                result[[i]] <- orcid.ii
+                next
+              } else {
+                row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
+                result[[i]] <- orcid.i
+                next
+              }
             } else {
               row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
               result[[i]] <- orcid.i
               next
             }
           } else {
-            row.names(orcid.i) <- paste0(full, seq_len(dim(orcid.i)[1]))
+            row.names(orcid.i) <- full
             result[[i]] <- orcid.i
             next
           }
-        } else {
+        }
+        else {
           row.names(orcid.i) <- full
           result[[i]] <- orcid.i
           next
         }
       }
-      else {
-        row.names(orcid.i) <- full
-        result[[i]] <- orcid.i
-        next
-      }
     } else {
       result[[i]] <- cbind.data.frame(
         first = first,
         last = last,
-        orcid = dados$ORCID,
+        orcid = dados[, orcid.name],
         row.names = full)
       next
     }
