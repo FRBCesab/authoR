@@ -1,6 +1,6 @@
-#' @title Get ORCID
+#' @title Search ORCID
 #'
-#' @description Get ORCID based on people's names.
+#' @description Search for ORCID based on people's names.
 #'
 #' @param x a data frame containing at least two columns: first name and last
 #'   name
@@ -60,18 +60,18 @@
 #' \dontrun{
 #'   # Single ORCID record with the name
 #'   df <- data.frame(FirstName = "Nicolas", LastName = "Casajus")
-#'   get_orcid(df)
+#'   search_orcid(df)
 #'   
 #'   # Multiple ORCID entries
 #'   df <- data.frame(FirstName = "Renato", LastName = "Lima")
-#'   get_orcid(df)
-#'   get_orcid(df, clean = TRUE)
-#'   get_orcid(df, keywords = "ecology")
+#'   search_orcid(df)
+#'   search_orcid(df, clean = TRUE)
+#'   search_orcid(df, keywords = "ecology")
 #' }   
 #'   
-#' @export get_orcid   
+#' @export search_orcid   
 #'
-get_orcid <- function(x,
+search_orcid <- function(x,
                       first.name = "FirstName",
                       last.name = "LastName",
                       middle.name = "MiddleName",
@@ -205,7 +205,6 @@ get_orcid <- function(x,
             result[[i]] <- orcid.i
             next
           }
-          
         } else {
           row.names(orcid.i) <- full
           result[[i]] <- orcid.i
@@ -225,7 +224,6 @@ get_orcid <- function(x,
         row.names = full)
       next
     }
-    
   }
   
   output <- dplyr::bind_rows(result)
