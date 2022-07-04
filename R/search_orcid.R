@@ -71,6 +71,8 @@
 #'   
 #' @export search_orcid   
 #'
+#'
+#'
 search_orcid <- function(x,
                       first.name = "FirstName",
                       last.name = "LastName",
@@ -88,12 +90,30 @@ search_orcid <- function(x,
   if (dim(x)[1] == 0)
     stop("Input data frame is empty!")
   
-  ## check the presence of input columns
+  if (!first.name %in% names(x))
+    stop("Input data frame does not contain the column with first names. Check input or redefine the column name")
+  
+  if (!last.name %in% names(x))
+    stop("Input data frame does not contain the column with last names. Check input or redefine the column name")
+
   if (!orcid.name %in% names(x))
     x[, orcid.name] <- NA
   
-  result <- vector("list", dim(x)[1])
+  if (!middle.name %in% names(x))
+    x[, middle.name] <- NA
   
+  ## preparing for the query
+  result <- vector("list", dim(x)[1])
+  full.names.orig <- 
+    apply(x[ , c(first.name, last.name)], 1, paste, collapse = " ")
+  dup.names <- full.names.orig[duplicated(full.names.orig)]
+  check_these <- full.names.orig %in% dup.names
+  full.names.orig[check_these] <- stats::ave(
+    full.names.orig[check_these], full.names.orig[check_these], 
+    FUN = function(i) paste0(i, '', seq_along(i)))
+  names(result) <- full.names.orig  
+  
+  ##querying
   for (i in seq_len(length(result))) {
     
     dados <- x[i, ]
@@ -191,6 +211,16 @@ search_orcid <- function(x,
                 family_name = last,
                 keywords = keywords))
             
+            if (clean) {
+              keep <- orcid.i$last %in% last & orcid.i$first %in% first
+              if (any(keep)) {
+                orcid.i <- orcid.i[keep, ] 
+              } else {
+                orcid.i <- orcid.i
+                warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+              }
+            }
+
             if (dim(orcid.ii)[1] == 1) {
               row.names(orcid.ii) <- full
               result[[i]] <- orcid.ii
@@ -225,23 +255,22 @@ search_orcid <- function(x,
       next
     }
   }
+  cat("\n")
   
-  output <- dplyr::bind_rows(result)
+  output <- dplyr::bind_rows(result, .id = "full.names.orig")
   colunas <- c("first", "last", "orcid")
-  output <- output[, names(output) %in% colunas[colunas %in% names(output)]]
-  
-  full.names <- gsub("[0-9]", "", row.names(output), perl = TRUE)
-  # f1 <- function(x) paste0(unique(x), collapse = "|")
-  # orcid.output <- 
-  #   stats::aggregate(output, list(full.names), f1)
   orcid.output <- 
-    stats::aggregate(output, list(full.names), paste0, collapse = "|")
-  full.names.orig <- 
-    apply(x[ , c(first.name, last.name)], 1, paste, collapse = " ")
+    stats::aggregate(output[, colunas], 
+                     list(output$full.names.orig),
+                     paste0, collapse = "|")
   orcid.output <- orcid.output[match(full.names.orig, orcid.output$Group.1),]
   
-  x[is.na(x[ , orcid.name]), orcid.name] <- 
-    as.character(orcid.output$orcid[is.na(x[ , orcid.name])]) 
+  new.orcid <- paste0(orcid.name, ".new")
+  x[, new.orcid] <- NA_character_
+  replace_these <- is.na(x[ , orcid.name])
+  x[replace_these, new.orcid] <- 
+    as.character(orcid.output$orcid[replace_these]) 
+  x[!replace_these, new.orcid] <- "not queried" 
   
   if (save.names) {
     new.columns <- c("firstName.orcid", "lastName.orcid")
