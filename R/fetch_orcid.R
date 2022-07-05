@@ -25,18 +25,18 @@
 #'   orcid_info(orcids)
 #' }   
 #'  
-#' @export orcid_info   
+#' @export fetch_orcid
 #'
-orcid_info <- function(orcid) {
+fetch_orcid <- function(orcid) {
   
   ## check input
   not.orcid <- grepl("\\D", gsub("-|X", "", orcid, perl = TRUE), perl = TRUE) |
-                  orcid %in% c("", " ", NA)
+                  orcid %in% c("", " ", NA, "NA")
   if (any(not.orcid))
-    warning ("One or more input objects are not ORCID numbers!")
+    warning ("One or more input characters are not ORCID numbers")
   
   if (all(not.orcid))
-    stop ("Please provide at least one valid ORCID number!")
+    stop ("Please provide at least one valid ORCID number")
 
   ## getting personal info from ORCID
   info <- rorcid::orcid_person(orcid[!not.orcid], details = FALSE)
@@ -97,7 +97,8 @@ orcid_info <- function(orcid) {
         keep_these <- !(!is.na(dados[start.date]) & !is.na(dados[end.data]))
         dados <- dados[keep_these, ]
       }
-    } else {
+    } 
+    if (dim(dados)[1] == 0) {
       dados <- as.data.frame(matrix(NA, ncol = length(columns),
                              dimnames = list(NULL, columns)))
     }
@@ -111,7 +112,7 @@ orcid_info <- function(orcid) {
   }
   
   output.adress <- dplyr::bind_rows(summs.clean)
-  
+
   ## editing extracted info
   output.info <- data.frame(ID = orcid[!not.orcid],
                             GivenName = as.character(given),
