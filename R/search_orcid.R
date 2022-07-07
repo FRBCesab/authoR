@@ -180,7 +180,7 @@ search_orcid <- function(x,
                 orcid.i <- orcid.i[keep, ] 
               } else {
                 orcid.i <- orcid.i
-                warning("Attempt to clean records final excluded all of them; keeping the results from the non-exact match")            
+                warning("Attempt to clean records finally excluded all of them; keeping the results from the non-exact match")            
               }
             }
             
