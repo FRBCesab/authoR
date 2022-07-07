@@ -8,7 +8,9 @@
 #' @param country.name character. The name of the column containing the name of the organization country.
 #'   Defaults to "CountryName".
 #' @param type character. The type of organizations for matching (see details) 
-#' @param matching.type character. The type of match performed (see details) 
+#' @param matching.type character. The type of match performed (see details)
+#' @param rows numerical. The row(s) number(s) to be returned up to 20. Default
+#'   to the first one, which is the one with the best search score.
 #'
 #' @return the same input data frame with the missing (i.e. NA) ORCID, and
 #'   optionally the corresponding names, if found.
@@ -89,15 +91,15 @@ search_ror <- function(x,
     
     # basic query definition and editing
     org.name.i <- as.character(x[i, org.name])
-    org.name.i <- plantR:::rmLatin(org.name.i)
+    org.name.i <- .remove_latin(org.name.i)
     org.name.i <- gsub("\\/", "%5C%2F", org.name.i, perl = TRUE)
     org.name.i <- gsub("\\&", "%26", org.name.i, perl = TRUE)
     org.name.i <- gsub("-", "%5C-", org.name.i, perl = TRUE)
     org.name.i <- gsub("\\(", "%5C%28", org.name.i, perl = TRUE)
     org.name.i <- gsub("\\)", "%5C%29", org.name.i, perl = TRUE)
-    #### IL FAUT CONFIRMER SI C'EST BIEN LE CODE POUR LES APOSTROFES ###
-    org.name.i <- gsub("’", "%E2%80%99", org.name.i, perl = TRUE)
-    org.name.i <- gsub("–", "%E2%80%93", org.name.i, perl = TRUE)
+    #### IL FAUT CONFIRMER SI C EST BIEN LES CODES URL ICI  ###
+    org.name.i <- gsub("\u2019", "%E2%80%99", org.name.i, perl = TRUE)
+    org.name.i <- gsub("\u2013", "%E2%80%93", org.name.i, perl = TRUE)
     
     my_url <- paste0(my_url, org.name.i)
     
@@ -205,7 +207,7 @@ search_ror <- function(x,
             result.i$external_ids.Wikidata.all <- 
               as.character(do.call(rbind,.null_to_na(result.i.flat$external_ids.Wikidata.all)))
           
-          #### CHECK HERE IF rows = 2 AND dim(result.i)[1] == 1
+          #### CHECK HERE IF rows = 2 AND dim(result.i)[1] == 1 ####
           
           result.i <- result.i[rows, , drop = FALSE]
           

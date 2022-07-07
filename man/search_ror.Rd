@@ -25,6 +25,9 @@ Defaults to "CountryName".}
 \item{type}{character. The type of organizations for matching (see details)}
 
 \item{matching.type}{character. The type of match performed (see details)}
+
+\item{rows}{numerical. The row(s) number(s) to be returned up to 20. Default
+to the first one, which is the one with the best search score.}
 }
 \value{
 the same input data frame with the missing (i.e. NA) ORCID, and
