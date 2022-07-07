@@ -9,7 +9,8 @@ search_ror(
   org.name = "OrganizationName",
   country.name = "CountryName",
   type = NULL,
-  matching.type = NULL
+  matching.type = NULL,
+  rows = 1
 )
 }
 \arguments{
@@ -51,8 +52,12 @@ If not NULL, the argument \code{matching.type} can be one of the following:
 
 \dontrun{
 
-  df <- data.frame(org.name = "USP", country.name = "Brazil")
+  
+  df <- data.frame(
+  OrganizationName = c("USP", "Universidade de Sao Paulo", "USP"), 
+  CountryName = c("Brazil", "Brazil", NA))
   search_ror(df)
+  search_ror(df, matching.type = "ACRONYM")
   
 }   
   
