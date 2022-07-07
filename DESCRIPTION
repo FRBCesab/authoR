@@ -5,12 +5,12 @@ Version: 0.0.0.9000
 Authors@R: c(
     person(given   = "Nicolas",
            family  = "Casajus",
-           role    = c("aut", "cre", "cph"),
+           role    = c("aut"),
            email   = "nicolas.casajus@fondationbiodiversite.fr",
            comment = c(ORCID = "0000-0002-5537-5294")),
     person(given   = "Renato A.",
            family  = "Fereira de Lima",
-           role    = c("aut"),
+           role    = c("aut", "cre"),
            email   = "raflima@usp.br",
            comment = c(ORCID = "0000-0002-1048-0138")))
 Description: A paragraph providing a full description of the project (on several 
@@ -24,8 +24,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Imports:
     curl,
-    jsonlite,
     dplyr,
+    jsonlite,
     rorcid
 Suggests:
     knitr,
@@ -34,3 +34,5 @@ Suggests:
     utils
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+Depends: 
+    R (>= 2.10)
